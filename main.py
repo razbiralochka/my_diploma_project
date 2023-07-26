@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from DQN import MyModel
 
 
 class Calcs():
@@ -13,6 +14,7 @@ class Calcs():
         self.inc0 = 51
         self.inc_k = 28.6
         self.r_k = 46
+        self.mumodel = MyModel()
     def get_radius(self):
         return self.r_list
 
@@ -24,24 +26,16 @@ class Calcs():
         return self.l_list
     def get_time(self):
         return self.time_list
-    def ctrl(self, v, az):
-        inc = math.radians(self.inc0)
-        inc_k = math.radians(self.inc_k)
-        r_k = self.r_k
-        p1 = np.sin(np.pi*(inc_k-inc)/2)/np.sqrt(r_k)
-        p2 = np.cos(np.pi*(inc_k-inc)/2)/np.sqrt(r_k)
-        p3 = 1-p2-v*np.sqrt(1-2*p2+1/r_k)
-
-        psi = np.arctan(p1/p3)
-        psi *= np.sign(np.cos(az))
-
-        return psi
 
 
     def equs(self):
         r = 1
-        v = 0
         phi = 0
+        beta = 0
+        lam = 0
+        u = 0
+        v = 0
+        omega = 0
         inc = math.radians(self.inc0)
         inc_k = math.radians(self.inc_k)
         r_k = self.r_k
@@ -52,13 +46,12 @@ class Calcs():
         self.time_list.clear()
         T=0
         acc = 0.00351598
+        while r < r_k:
 
-        while inc > inc_k:
 
-            lam = self.ctrl(v ,phi)
 
-            self.r_list.append(r*8371)
-            self.time_list.append(v*6900.5)
+            self.r_list.append(r)#*8371)
+            self.time_list.append(v)#*6900.5)
             self.p_list.append(math.degrees(phi))
             self.l_list.append(math.degrees(lam))
             self.inc_list.append(math.degrees(inc))
@@ -68,16 +61,18 @@ class Calcs():
             dp = (1 / (r ** 1.5))
             dr = 2*acc*(r**1.5)*math.cos(lam)
             di = acc*math.sin(lam)*(r**0.5)*np.cos(phi)
+            dom = acc*math.sin(lam)*(r**0.5)*np.sin(phi)
             dV = acc
-
 
             phi += dp*dt
             r += dr * dt
             inc += di * dt
+            omega += dom * dt
             v += dV*dt
             T += dt
         err =np.sqrt((inc-inc_k)**2+(r-r_k)**2)
         print("err: ", err)
+        print("omega: ", math.degrees(omega))
         print("Time: ",T)
 
 
