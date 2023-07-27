@@ -1,7 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-from DQN import MyModel
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+class DQN(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.layer1 = nn.Linear(5, 128)
+        self.layer2 = nn.Linear(128, 128)
+        self.layer3 = nn.Linear(128, 3)
+    def forward(self, x):
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        x = self.layer3(x)
+        return x
+
+
+
+
+model = DQN1()
 
 
 class Calcs():
@@ -14,7 +35,7 @@ class Calcs():
         self.inc0 = 51
         self.inc_k = 28.6
         self.r_k = 46
-        self.mumodel = MyModel()
+
     def get_radius(self):
         return self.r_list
 
@@ -26,7 +47,6 @@ class Calcs():
         return self.l_list
     def get_time(self):
         return self.time_list
-
 
     def equs(self):
         r = 1
@@ -46,24 +66,30 @@ class Calcs():
         self.time_list.clear()
         T=0
         acc = 0.00351598
-        while r < r_k:
-
-
+        net = DQN()
+        while T < 250:
 
             self.r_list.append(r)#*8371)
             self.time_list.append(v)#*6900.5)
             self.p_list.append(math.degrees(phi))
-            self.l_list.append(math.degrees(lam))
+            self.l_list.append(math.degrees(u))
             self.inc_list.append(math.degrees(inc))
 
             dt = np.pi/1000
+            inp = torch.tensor([r,inc,omega,lam,beta])
+            u = torch.argmax(net(inp.float())).numpy()
 
+
+            dlam = beta
+            dbeta = u*0.001
             dp = (1 / (r ** 1.5))
             dr = 2*acc*(r**1.5)*math.cos(lam)
             di = acc*math.sin(lam)*(r**0.5)*np.cos(phi)
             dom = acc*math.sin(lam)*(r**0.5)*np.sin(phi)
             dV = acc
 
+            lam += dlam*dt
+            beta += dbeta*dt
             phi += dp*dt
             r += dr * dt
             inc += di * dt
@@ -102,4 +128,5 @@ plt.plot(time, calcs.get_control())
 plt.xlabel("Характеристическая скорость")
 plt.ylabel("Управляющий сигнал, град")
 plt.show()
-plt.show()
+
+
