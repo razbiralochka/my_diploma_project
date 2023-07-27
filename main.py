@@ -15,7 +15,7 @@ class Calcs():
         self.inc0 = 51
         self.inc_k = 28.6
         self.r_k = 46
-
+        self.agent = Agent()
     def get_radius(self):
         return self.r_list
 
@@ -46,11 +46,11 @@ class Calcs():
         self.time_list.clear()
         T=0
         acc = 0.00351598
-        agent = Agent()
 
-        dt = np.pi / 1000
+
+        dt = 4 / 1000
         while T < 250:
-            phi = phi % (2*np.pi)
+            phi_n = phi % (2 * np.pi)
             self.r_list.append(r)#*8371)
             self.time_list.append(v)#*6900.5)
             self.p_list.append(math.degrees(phi))
@@ -59,9 +59,9 @@ class Calcs():
 
 
 
-            inp = np.array([[r, inc, phi, lam, beta]])
+            inp = np.array([[r, inc, phi_n, lam, beta]])
 
-            u = np.argmax(agent.select_action(inp).numpy())-1
+            u = np.argmax(self.agent.select_action(inp).numpy())-1
 
 
             dlam = beta
@@ -99,27 +99,30 @@ class Calcs():
         eps = 0
         T = 0
         acc = 0.00351598
-        agent = Agent()
+
         err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)
         inp = np.array([[r, inc, omega, lam, beta]])
-        dt = np.pi / 1000
+        dt = 4 / 1000
         N = 0
-        K = 0
-        while err > 0.1:
-            if K == 80000:
+        while err > 1:
+            N+=1
+            if T > 250:
                 break
             phi = phi % (2 * np.pi)
             prev_err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)*10e3
             inp = np.array([[r, inc, omega, lam, beta]])
             state = inp[0].tolist()
 
-            action = np.argmax(agent.select_action(inp).numpy())
+            action = np.argmax(self.agent.select_action(inp).numpy())
             eps = np.random.randint(0,100,1)
             if eps < 10:
                 action = np.random.randint(0,2,1)[0]
 
-            u = action-1
 
+            if abs(lam) > np.pi/2:
+                action = int(-np.sign(lam) + 1)
+
+            u = action - 1
             dlam = beta
             dbeta = u * 0.001
             dp = (1 / (r ** 1.5))
@@ -136,25 +139,24 @@ class Calcs():
             omega += dom * dt
             v += dV * dt
             T += dt
-            N += 1
+
             reward = prev_err -  np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)*10e3
+
+
             next_state = [r, inc, omega, lam, beta]
 
-            if N < 500:
-                agent.add_to_replay([state,action,reward,next_state])
-
-            else:
-                K += N
+            if N > 25:
+                self.agent.add_to_replay([state,action,reward,next_state])
                 N = 0
-                agent.train()
+        self.agent.train()
 
 
 calcs = Calcs()
 
 
-
-calcs.train()
-calcs.fly()
+for i in range(500):
+    calcs.train()
+    calcs.fly()
 
 angle = calcs.get_angles()
 time = calcs.get_time()

@@ -14,9 +14,9 @@ class DQN(Model):
   def __init__(self):
     super().__init__()
     self.d1 = Dense(5, activation='linear', input_shape=(5,))
-    self.d2 = Dense(15, activation='relu')
-    self.d3 = Dense(20, activation='relu')
-    self.d4 = Dense(10, activation='relu')
+    self.d2 = Dense(25, activation='relu')
+    self.d3 = Dense(50, activation='relu')
+    self.d4 = Dense(20, activation='relu')
     self.d5 = Dense(3)
 
   def call(self, x):
