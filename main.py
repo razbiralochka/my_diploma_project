@@ -48,7 +48,7 @@ class Calcs():
         acc = 0.00351598
 
 
-        dt = 4 / 1000
+        dt = 0.1
         while T < 250:
             phi_n = phi % (2 * np.pi)
             self.r_list.append(r)#*8371)
@@ -84,8 +84,8 @@ class Calcs():
         print("err: ", err)
         print("omega: ", math.degrees(omega))
         print("Time: ",T)
-
-    def train(self):
+        return err
+    def train(self,episode):
         r = 1
         phi = 0
         beta = 0
@@ -96,31 +96,34 @@ class Calcs():
         inc = math.radians(self.inc0)
         inc_k = math.radians(self.inc_k)
         r_k = self.r_k
-        eps = 0
         T = 0
-        acc = 0.00351598
-
+        acc = 0.0035159
+        penalty = 0
         err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)
-        inp = np.array([[r, inc, omega, lam, beta]])
-        dt = 4 / 1000
+
+        dt = 0.1
         N = 0
         while err > 1:
             N+=1
             if T > 250:
                 break
             phi = phi % (2 * np.pi)
-            prev_err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)*10e3
+            prev_err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)
             inp = np.array([[r, inc, omega, lam, beta]])
             state = inp[0].tolist()
 
-            action = np.argmax(self.agent.select_action(inp).numpy())
+            if episode < 50:
+                action = 1
+
+            else:
+                action = np.argmax(self.agent.select_action(inp).numpy())
+
+            '''
             eps = np.random.randint(0,100,1)
-            if eps < 10:
+           
+            if eps < arg:
                 action = np.random.randint(0,2,1)[0]
-
-
-            if abs(lam) > np.pi/2:
-                action = int(-np.sign(lam) + 1)
+            '''
 
             u = action - 1
             dlam = beta
@@ -140,23 +143,24 @@ class Calcs():
             v += dV * dt
             T += dt
 
-            reward = prev_err -  np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)*10e3
+            reward = prev_err-np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)-penalty
 
 
             next_state = [r, inc, omega, lam, beta]
 
-            if N > 25:
-                self.agent.add_to_replay([state,action,reward,next_state])
-                N = 0
+
+            self.agent.add_to_replay([state,action,reward,next_state, err])
+
         self.agent.train()
 
 
 calcs = Calcs()
 
+err = 45
 
-for i in range(500):
-    calcs.train()
-    calcs.fly()
+for episode in range(100):
+    calcs.train(episode)
+    err = calcs.fly()
 
 angle = calcs.get_angles()
 time = calcs.get_time()

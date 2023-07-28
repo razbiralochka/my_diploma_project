@@ -16,7 +16,7 @@ class DQN(Model):
     self.d1 = Dense(5, activation='linear', input_shape=(5,))
     self.d2 = Dense(25, activation='relu')
     self.d3 = Dense(50, activation='relu')
-    self.d4 = Dense(20, activation='relu')
+    self.d4 = Dense(20, activation='linear')
     self.d5 = Dense(3)
 
   def call(self, x):
@@ -51,18 +51,24 @@ class Agent():
         train_accuracy(target, predictions)
 
     def train(self):
-        print("Training: ")
+        print("___Training___")
         train_loss.reset_states()
         train_accuracy.reset_states()
-        for line in self.replay_memoty:
+        data = list()
+        N = len(self.replay_memoty)
+        for i,line in enumerate(self.replay_memoty):
             state = np.array([line[0]])
             action = line[1]
             reward = line[2]
             next_state = np.array([line[3]])
-            target = reward + 0.99 * np.amax(self.HAL9000(next_state)[0])
+            penalty = line[4]
+            if i == N-1:
+                target = reward - penalty
+            else:
+                target = reward + np.amax(self.HAL9000(next_state)[0])
             target_f = self.HAL9000(state).numpy()
             target_f[0][action] = target
-            self.train_step(state, target_f)
-
-
+            data.append([state,target_f])
+        for line in data:
+            self.train_step(line[0], line[1])
         self.replay_memoty.clear()
