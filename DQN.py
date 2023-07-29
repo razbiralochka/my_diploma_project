@@ -7,16 +7,16 @@ from tensorflow.keras import Model
 loss_object = tf.keras.losses.MeanSquaredError()
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
 
 class DQN(Model):
   def __init__(self):
     super().__init__()
     self.d1 = Dense(5, activation='linear', input_shape=(5,))
-    self.d2 = Dense(25, activation='relu')
-    self.d3 = Dense(50, activation='relu')
-    self.d4 = Dense(20, activation='linear')
+    self.d2 = Dense(100, activation='relu')
+    self.d3 = Dense(500, activation='relu')
+    self.d4 = Dense(100, activation='linear')
     self.d5 = Dense(3)
 
   def call(self, x):
@@ -54,7 +54,6 @@ class Agent():
         print("___Training___")
         train_loss.reset_states()
         train_accuracy.reset_states()
-        data = list()
         N = len(self.replay_memoty)
         for i,line in enumerate(self.replay_memoty):
             state = np.array([line[0]])
@@ -63,12 +62,12 @@ class Agent():
             next_state = np.array([line[3]])
             penalty = line[4]
             if i == N-1:
-                target = reward - penalty
+                target = reward
             else:
-                target = reward + np.amax(self.HAL9000(next_state)[0])
+                target = reward + 0.9*np.amax(self.HAL9000(next_state)[0])
             target_f = self.HAL9000(state).numpy()
             target_f[0][action] = target
-            data.append([state,target_f])
-        for line in data:
-            self.train_step(line[0], line[1])
+            self.train_step(state, target_f)
+
+
         self.replay_memoty.clear()
