@@ -7,7 +7,7 @@ from tensorflow.keras import Model
 loss_object = tf.keras.losses.MeanSquaredError()
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 
 class DQN(Model):
@@ -64,7 +64,7 @@ class Agent():
             if i == N-1:
                 target = reward
             else:
-                target = reward + 0.9*np.amax(self.HAL9000(next_state)[0])
+                target = reward + 0.99*np.amax(self.HAL9000(next_state)[0])
             target_f = self.HAL9000(state).numpy()
             target_f[0][action] = target
             self.train_step(state, target_f)

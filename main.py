@@ -17,7 +17,7 @@ class Calcs():
         self.inc_k = 28.6
         self.r_k = 46
         self.agent = Agent()
-        self.gain = np.pi*10e-6
+        self.gain = 2*np.pi*10e-6
     def get_radius(self):
         return self.r_list
 
@@ -127,7 +127,7 @@ class Calcs():
             eps = np.random.randint(0, 100, 1)
 
 
-            if eps <= max(10,70-3*episode):
+            if eps <= 20:
                 action = np.random.randint(0, 2, 1)[0]
 
 
@@ -157,7 +157,7 @@ class Calcs():
 
             next_state = [r, inc, phi % (2*np.pi), lam, beta]
 
-            if np.random.randint(0,100,1)[0] <= 100:
+            if np.random.randint(0,100,1)[0] <= 20:
                 self.agent.add_to_replay([state,action,reward,next_state, err])
 
         self.agent.train()
@@ -168,6 +168,7 @@ calcs = Calcs()
 err = 45
 
 for episode in range(10):
+    print("Episode: ", episode+1)
     calcs.train(episode)
     err = calcs.fly()
 
