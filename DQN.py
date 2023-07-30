@@ -69,5 +69,4 @@ class Agent():
             target_f[0][action] = target
             self.train_step(state, target_f)
 
-
         self.replay_memoty.clear()
