@@ -12,10 +12,12 @@ class Calcs():
         self.l_list = list()
         self.p_list = list()
         self.time_list = list()
+        self.u_list = list()
         self.inc0 = 51
         self.inc_k = 28.6
         self.r_k = 46
         self.agent = Agent()
+        self.gain = np.pi*10e-6
     def get_radius(self):
         return self.r_list
 
@@ -27,13 +29,14 @@ class Calcs():
         return self.l_list
     def get_time(self):
         return self.time_list
+    def get_signals(self):
+        return self.u_list
 
     def fly(self):
         r = 1
         phi = 0
         beta = 0
         lam = 0
-
         v = 0
         omega = 0
         inc = math.radians(self.inc0)
@@ -43,35 +46,35 @@ class Calcs():
         self.inc_list.clear()
         self.p_list.clear()
         self.l_list.clear()
+        self.u_list.clear()
         self.time_list.clear()
         T=0
         acc = 0.00351598
         S = 0
 
-        dt = 0.1
-        while r < r_k:
-            if T > 300:
-                break
-            phi_n = phi % (2 * np.pi)
+        dt = 0.01
+        while T < 260:
+
+
             self.r_list.append(r)#*8371)
-            self.time_list.append(v)#*6900.5)
+            self.time_list.append(T)#*6900.5)
             self.p_list.append(math.degrees(phi))
             self.l_list.append(math.degrees(lam))
             self.inc_list.append(math.degrees(inc))
 
             prev_err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)
 
-            inp = np.array([[r, inc, phi_n, lam, beta]])
+            inp = np.array([[r, inc, phi % (2*np.pi), lam, beta]])
 
             u = np.argmax(self.agent.select_action(inp).numpy())-1
 
-
+            self.u_list.append(u)
             dlam = beta
-            dbeta = u*0.001
+            dbeta = u * self.gain
             dp = (1 / (r ** 1.5))
             dr = 2*acc*(r**1.5)*math.cos(lam)
             di = acc*math.sin(lam)*(r**0.5)*np.cos(phi)
-            dom = acc*math.sin(lam)*(r**0.5)*np.sin(phi)
+            dom=(acc * math.sin(lam) * (r ** 0.5) * np.sin(phi))/np.sin(inc)
             dV = acc
 
             lam += dlam*dt
@@ -88,8 +91,8 @@ class Calcs():
             S += (prev_err-err)
         err =np.sqrt((inc-inc_k)**2+(r-r_k)**2)
         #S -= err
-        print("err: ", err)
-        print("omega: ", math.degrees(omega))
+        print("r: ", r)
+        print("inc: ", math.degrees(inc))
         print("SumQ: ",S)
         return err
     def train(self,episode):
@@ -105,32 +108,36 @@ class Calcs():
         r_k = self.r_k
         T = 0
         acc = 0.0035159
-
+        err = 100
         dt = 0.1
         N = 0
-        while r < r_k:
+
+        while T < 260:
             N+=1
-            if T > 300:
+            if r > 2*self.r_k:
                 break
-            phi = phi % (2 * np.pi)
+
             prev_err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)
-            inp = np.array([[r, inc, omega, lam, beta]])
+            inp = np.array([[r, inc, phi % (2*np.pi), lam, beta]])
             state = inp[0].tolist()
 
 
 
             action = np.argmax(self.agent.select_action(inp).numpy())
             eps = np.random.randint(0, 100, 1)
-            if eps <= 10:
+
+
+            if eps <= max(10,70-3*episode):
                 action = np.random.randint(0, 2, 1)[0]
+
 
             u = action - 1
             dlam = beta
-            dbeta = u * 0.001
+            dbeta = u * self.gain
             dp = (1 / (r ** 1.5))
             dr = 2 * acc * (r ** 1.5) * math.cos(lam)
             di = acc * math.sin(lam) * (r ** 0.5) * np.cos(phi)
-            dom = acc * math.sin(lam) * (r ** 0.5) * np.sin(phi)
+            dom = (acc * math.sin(lam) * (r ** 0.5) * np.sin(phi))/np.sin(inc)
             dV = acc
 
             lam += dlam * dt
@@ -143,11 +150,14 @@ class Calcs():
             T += dt
 
             err = np.sqrt((inc - inc_k) ** 2 + (r - r_k) ** 2)
-            reward = prev_err-err
 
-            next_state = [r, inc, omega, lam, beta]
+            reward = -115.385*abs(inc - inc_k)-abs(r-r_k)
 
-            if np.random.randint(0,100,1)[0] < 20:
+            phi = phi % (2 * np.pi)
+
+            next_state = [r, inc, phi % (2*np.pi), lam, beta]
+
+            if np.random.randint(0,100,1)[0] <= 100:
                 self.agent.add_to_replay([state,action,reward,next_state, err])
 
         self.agent.train()
@@ -157,7 +167,7 @@ calcs = Calcs()
 
 err = 45
 
-for episode in range(2000):
+for episode in range(10):
     calcs.train(episode)
     err = calcs.fly()
 
@@ -167,18 +177,26 @@ radius = calcs.get_radius()
 inclination = calcs.get_inc()
 
 plt.plot(time, radius)
-plt.xlabel("Характеристическая скорость")
-plt.ylabel("Восота орбиты, км")
+plt.xlabel("Время")
+plt.ylabel("Радиус орбиты")
 plt.show()
 
 plt.plot(time, inclination)
-plt.xlabel("Характеристическая скорость")
+plt.xlabel("Время")
 plt.ylabel("Наклонение орбиты, град")
 plt.show()
 
-plt.plot(time, calcs.get_control())
-plt.xlabel("Характеристическая скорость")
+plt.plot(angle, calcs.get_control())
+plt.xlabel("Азимут, град")
 plt.ylabel("Управляющий сигнал, град")
 plt.show()
 
+plt.plot(angle, calcs.get_signals())
+plt.xlabel("Азимут, град")
+plt.ylabel("сигнал ")
+plt.show()
 
+plt.plot(radius, inclination)
+plt.xlabel("Радиус орбиты")
+plt.ylabel("Наклонение орбиты, град")
+plt.show()
