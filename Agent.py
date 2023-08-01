@@ -21,7 +21,7 @@ class DQN(Model):
 
   def call(self, arg):
     az = arg[0]
-    x = tf.tensor_scatter_nd_update(arg, [[0]], [az % 2 * 3.14159])
+    x = tf.tensor_scatter_nd_update(arg, [[0]], [az % 6.28319])
     x = tf.reshape(x, [1, 5])
     x = self.d1(x)
     x = self.d2(x)
@@ -52,6 +52,8 @@ class Agent():
     def select_action(self,state):
         predictions = self.HAL9000(state, training=False)
         res = tf.argmax(predictions[0])
+        if tf.random.uniform(shape=[], minval=0, maxval=100, dtype=tf.int64) < 10:
+            res = tf.random.uniform(shape=[], minval=0, maxval=2, dtype=tf.int64)
         return res
     def remember(self,state, action, reward, next_state,done):
         self.memory.memorize(state, action, reward, next_state,done)

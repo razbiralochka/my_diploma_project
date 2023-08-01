@@ -49,9 +49,9 @@ class Enviroment():
 
         if self.Time > 250:
             done = True
-        if abs(self.state[3]) > 2.3562:
+        if abs(self.state[3]) > 1.57:
             done = True
-        if self.state[1] < 1:
+        if di > 0:
             done = True
 
 
