@@ -19,4 +19,4 @@ for episode in range(1000):
     agent.learn()
     print(state)
     print("Score: ", Score)
-    print("Time:", Time)
+    print("Time:", time)
