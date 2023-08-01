@@ -1,8 +1,8 @@
-import numpy as np
 import random
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
+from collections import deque
 
 loss_object = tf.keras.losses.MeanSquaredError()
 train_loss = tf.keras.metrics.Mean(name='train_loss')
@@ -19,7 +19,10 @@ class DQN(Model):
     self.d4 = Dense(100, activation='linear')
     self.d5 = Dense(3)
 
-  def call(self, x):
+  def call(self, arg):
+    az = arg[0]
+    x = tf.tensor_scatter_nd_update(arg, [[0]], [az % 2 * 3.14159])
+    x = tf.reshape(x, [1, 5])
     x = self.d1(x)
     x = self.d2(x)
     x = self.d3(x)
@@ -30,9 +33,9 @@ class DQN(Model):
 
 class Memory():
     def __init__(self):
-        self.replay_memory = list()
-    def memorize(self, state, action, reward, next_state,done):
-        self.replay_memory.append((state, action, reward, next_state))
+        self.replay_memory = deque(maxlen=2000)
+    def memorize(self, state, action, state_, reward, done):
+        self.replay_memory.append((state, action, state_, reward, done))
 
     def generate_batch(self):
         if len(self.replay_memory) <= 200:
@@ -47,9 +50,8 @@ class Agent():
         self.memory  = Memory()
     @tf.function
     def select_action(self,state):
-        predictions = self.HAL9000(tf.reshape(state,[1,5]), training=False)
+        predictions = self.HAL9000(state, training=False)
         res = tf.argmax(predictions[0])
-        res = tf.cast(res,tf.float32)
         return res
     def remember(self,state, action, reward, next_state,done):
         self.memory.memorize(state, action, reward, next_state,done)
@@ -66,19 +68,16 @@ class Agent():
     def learn(self):
         train_loss.reset_states()
         train_accuracy.reset_states()
-        mini_batch=self.generate_batch()
-        N = len(mini_batch)
-        for i,line in enumerate(mini_batch):
-            state = np.array([line[0]])
-            action = line[1]
-            reward = line[2]
-            next_state = np.array([line[3]])
-            if i == N-1:
+        mini_batch=self.memory.generate_batch()
+        for state, action, state_, reward, done in mini_batch:
+
+            if done:
                 target = reward
             else:
-                target = reward + 0.99*np.amax(self.HAL9000(next_state)[0])
-            target_f = self.HAL9000(state).numpy()
-            target_f[0][action] = target
+                Qmax = tf.experimental.numpy.amax(self.HAL9000(state_))
+                target = reward + 0.99*Qmax
+            Q = self.HAL9000(state)
+
+            target_f = tf.tensor_scatter_nd_update(Q,[[0, action]],[target])
+
             self.train_step(state, target_f)
-    def clear_memory(self):
-        self.replay_memory.clear()

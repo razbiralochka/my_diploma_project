@@ -16,6 +16,12 @@ class Enviroment():
         self.time_step = tf.constant(0.1)
         self.Time = tf.Variable(0, dtype=float)
     def reset(self):
+        radius = 1
+        inclination = math.radians(51)
+        azimuth = 0
+        psi = 0
+        beta = 0
+        self.state = tf.Variable([azimuth, radius, inclination, psi, beta])
         state = self.state
         return state, False
 
@@ -28,7 +34,7 @@ class Enviroment():
         err_1 = tf.norm(self.state[1:3]-self.end_point)
 
         dpsi = beta
-        dbeta = tf.add(action, -1) * self.gain
+        dbeta = tf.cast(action-1, float) * self.gain
         daz = (1 / (radius ** 1.5))
         dr = 2 * self.acc * (radius ** 1.5) * tf.cos(psi)
         di = self.acc * tf.sin(psi) * (radius ** 0.5) * tf.cos(az)
@@ -43,5 +49,10 @@ class Enviroment():
 
         if self.Time > 250:
             done = True
+        if abs(self.state[3]) > 2.3562:
+            done = True
+        if self.state[1] < 1:
+            done = True
+
 
         return self.state, reward, done, self.Time
