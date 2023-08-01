@@ -19,9 +19,8 @@ class DQN(Model):
     self.d4 = Dense(100, activation='linear')
     self.d5 = Dense(3)
 
-  def call(self, arg):
-    az = arg[0]
-    x = tf.tensor_scatter_nd_update(arg, [[0]], [az % 6.28319])
+  def call(self, x):
+
     x = tf.reshape(x, [1, 5])
     x = self.d1(x)
     x = self.d2(x)
@@ -38,10 +37,10 @@ class Memory():
         self.replay_memory.append((state, action, state_, reward, done))
 
     def generate_batch(self):
-        if len(self.replay_memory) <= 200:
+        if len(self.replay_memory) <= 500:
             mini_batch = self.replay_memory
         else:
-            mini_batch = random.sample(self.replay_memory, 200)
+            mini_batch = random.sample(self.replay_memory, 500)
         return mini_batch
 
 class Agent():
@@ -57,6 +56,7 @@ class Agent():
         return res
     def remember(self,state, action, reward, next_state,done):
         self.memory.memorize(state, action, reward, next_state,done)
+
     @tf.function
     def train_step(self,state, target):
         with tf.GradientTape() as tape:
@@ -77,7 +77,7 @@ class Agent():
                 target = reward
             else:
                 Qmax = tf.experimental.numpy.amax(self.HAL9000(state_))
-                target = reward + 0.99*Qmax
+                target = reward + 0.95*Qmax
             Q = self.HAL9000(state)
 
             target_f = tf.tensor_scatter_nd_update(Q,[[0, action]],[target])
