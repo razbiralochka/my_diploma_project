@@ -18,7 +18,7 @@ for episode in range(2000):
         agent.remember(state, action, state_, reward, done)
         state = state_
         Score += reward
-        print(state_)
-    agent.learn()
+        agent.learn()
+    print(state_)
     print("Score: ", Score)
     print("Time:", time)
