@@ -19,23 +19,24 @@ class Enviroment():
         self.Time = 0
         return self.state, False
 
-    @tf.function
-    def transition_step(self, state, action):
-        h = tf.constant(0.1)
-        az, radius, inclination, psi, beta = tf.unstack(state)
+   
+
+    def step(self, action):
+
+        done = False
+
+
+        az, radius, inclination, psi, beta = tf.unstack(self.state)
         dpsi = beta
         dbeta = tf.cast(action - 1, float) * self.gain
         daz = (1 / (radius ** 1.5))
         dr = 2 * self.acc * (radius ** 1.5) * tf.cos(psi)
         di = self.acc * tf.sin(psi) * (radius ** 0.5) * tf.cos(az)
         dstate = tf.stack([daz, dr, di, dpsi, dbeta])
-        return dstate*h
 
-    def step(self, action):
 
-        done = False
 
-        self.state.assign_add(self.transition_step(self.state, action))
+        self.state.assign_add(dstate*0.1)
 
         err_d = tf.norm(self.state[1:3] - self.end_point)
 
