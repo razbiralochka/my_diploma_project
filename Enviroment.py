@@ -34,7 +34,7 @@ class Enviroment():
         di = self.acc * tf.sin(psi) * (radius ** 0.5) * tf.cos(az)
         dstate = tf.stack([daz, dr, di, dpsi, dbeta])
 
-        print(action - 1)
+
 
         err_1 = tf.norm(self.state[1:3] - self.end_point)
 
@@ -47,15 +47,14 @@ class Enviroment():
 
         reward = (err_1-err_2)*1000
 
-        if self.Time > 250:
+        if self.Time > 300:
             done = True
 
         if abs(self.state[3]) > 1:
             done = True
 
-        if di > 0:
+        if self.state[3] > 1:
+
             done = True
-
-
 
         return self.state, reward, done, self.Time
