@@ -7,7 +7,7 @@ from collections import deque
 loss_object = tf.keras.losses.MeanSquaredError()
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.1)
 
 
 class DQN(Model):
@@ -51,8 +51,10 @@ class Agent():
     def select_action(self,state):
         predictions = self.HAL9000(state, training=False)
         res = tf.argmax(predictions[0])
-        if tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int64) < 700:
-            res = tf.random.uniform(shape=[], minval=0, maxval=2, dtype=tf.int64)
+
+        if tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int64) < 100:
+            res = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int64)
+
         return res
     def remember(self,state, action, reward, next_state,done):
         self.memory.memorize(state, action, reward, next_state,done)
@@ -81,5 +83,6 @@ class Agent():
             Q = self.HAL9000(state)
 
             target_f = tf.tensor_scatter_nd_update(Q,[[0, action]],[target])
+
 
             self.train_step(state, target_f)

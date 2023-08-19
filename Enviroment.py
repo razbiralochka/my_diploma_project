@@ -13,7 +13,7 @@ class Enviroment():
         radius = 1
         inclination = math.radians(51)
         azimuth = 0
-        psi = -0.02
+        psi =  0
         beta = 0
         self.state = tf.Variable([azimuth, radius, inclination, psi, beta])
         self.Time = 0
@@ -34,8 +34,10 @@ class Enviroment():
         di = self.acc * tf.sin(psi) * (radius ** 0.5) * tf.cos(az)
         dstate = tf.stack([daz, dr, di, dpsi, dbeta])
 
+        print(action - 1)
 
         err_1 = tf.norm(self.state[1:3] - self.end_point)
+
         self.state.assign_add(dstate*0.1)
 
         err_2 = tf.norm(self.state[1:3] - self.end_point)
@@ -43,7 +45,7 @@ class Enviroment():
 
         self.Time+=0.1
 
-        reward = err_1-err_2
+        reward = (err_1-err_2)*1000
 
         if self.Time > 250:
             done = True
@@ -51,7 +53,7 @@ class Enviroment():
         if abs(self.state[3]) > 1:
             done = True
 
-        if dstate[2] > 0:
+        if di > 0:
             done = True
 
 
