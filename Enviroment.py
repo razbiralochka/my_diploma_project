@@ -13,7 +13,7 @@ class Enviroment():
         radius = 1
         inclination = math.radians(51)
         azimuth = 0
-        psi = 0
+        psi = -0.02
         beta = 0
         self.state = tf.Variable([azimuth, radius, inclination, psi, beta])
         self.Time = 0
@@ -35,22 +35,25 @@ class Enviroment():
         dstate = tf.stack([daz, dr, di, dpsi, dbeta])
 
 
-
+        err_1 = tf.norm(self.state[1:3] - self.end_point)
         self.state.assign_add(dstate*0.1)
 
-        err_d = tf.norm(self.state[1:3] - self.end_point)
+        err_2 = tf.norm(self.state[1:3] - self.end_point)
 
-        cos_d = 150*tf.keras.losses.cosine_similarity(self.end_point, self.state[1:3])
 
         self.Time+=0.1
 
+        reward = err_1-err_2
+
         if self.Time > 250:
             done = True
+
         if abs(self.state[3]) > 1:
             done = True
 
+        if dstate[2] > 0:
+            done = True
 
-        reward = -cos_d/err_d
 
 
         return self.state, reward, done, self.Time

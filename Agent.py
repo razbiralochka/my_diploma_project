@@ -37,10 +37,10 @@ class Memory():
         self.replay_memory.append((state, action, state_, reward, done))
 
     def generate_batch(self):
-        if len(self.replay_memory) <= 500:
+        if len(self.replay_memory) <= 1000:
             mini_batch = self.replay_memory
         else:
-            mini_batch = random.sample(self.replay_memory, 500)
+            mini_batch = random.sample(self.replay_memory, 1000)
         return mini_batch
 
 class Agent():
@@ -51,7 +51,7 @@ class Agent():
     def select_action(self,state):
         predictions = self.HAL9000(state, training=False)
         res = tf.argmax(predictions[0])
-        if tf.random.uniform(shape=[], minval=0, maxval=100, dtype=tf.int64) < 10:
+        if tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int64) < 700:
             res = tf.random.uniform(shape=[], minval=0, maxval=2, dtype=tf.int64)
         return res
     def remember(self,state, action, reward, next_state,done):
