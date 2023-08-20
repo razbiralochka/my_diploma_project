@@ -45,15 +45,15 @@ class Enviroment():
 
         self.Time+=0.1
 
-        reward = (err_1-err_2)*1000
+        reward = (err_1-err_2)*100
 
-        if self.Time > 300:
+        if self.Time > 250:
             done = True
 
-        if abs(self.state[3]) > 1:
+        if abs(self.state[3]) > 1.3:
             done = True
 
-        if self.state[3] > 1:
+        if self.state[2] > math.radians(51):
 
             done = True
 
