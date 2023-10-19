@@ -3,21 +3,23 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 from collections import deque
+import numpy as np
+
 
 loss_object = tf.keras.losses.MeanSquaredError()
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.1)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 
 class DQN(Model):
   def __init__(self):
     super().__init__()
     self.d1 = Dense(5, activation='linear')
-    self.d2 = Dense(360, activation='relu')
-    self.d3 = Dense(500, activation='relu')
-    self.d4 = Dense(100, activation='linear')
-    self.d5 = Dense(3)
+    self.d2 = Dense(500, activation='leaky_relu')
+    self.d3 = Dense(1000, activation='linear')
+    self.d4 = Dense(100, activation='leaky_relu')
+    self.d5 = Dense(3, activation='linear')
 
   def call(self, x):
 
@@ -33,30 +35,35 @@ class DQN(Model):
 class Memory():
     def __init__(self):
         self.replay_memory = deque(maxlen=2000)
-    def memorize(self, state, action, state_, reward, done):
-        self.replay_memory.append((state, action, state_, reward, done))
 
-    def generate_batch(self):
-        if len(self.replay_memory) <= 1000:
-            mini_batch = self.replay_memory
-        else:
-            mini_batch = random.sample(self.replay_memory, 1000)
-        return mini_batch
+
 
 class Agent():
     def __init__(self):
         self.HAL9000 = DQN()
-        self.memory  = Memory()
-    @tf.function
+        self.HAL9000_target = DQN()
+        self.HAL9000_target.load_weights('wheights')
+        self.HAL9000.load_weights('wheights')
+        self.memory  =deque(maxlen=2000)
+        self.epsilon = 1
+        self.th = 0
     def select_action(self,state):
-        predictions = self.HAL9000(state, training=False)
-        res = tf.argmax(predictions[0])
-        if tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int64) < 100:
-            res = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int64)
-        return res
-    def remember(self,state, action, reward, next_state,done):
-        self.memory.memorize(state, action, reward, next_state,done)
 
+
+        state[0] = state[0] % (2*np.pi)
+        predictions = self.HAL9000(state, training=False).numpy()
+        res = np.argmax(predictions[0])
+
+        if np.random.rand() < self.epsilon:
+            res = random.randint(0,2)
+
+        if abs(state[3]) > 0.7:
+            res = round(-np.sign(state[3]))+1
+
+        return res
+
+    def remember(self, state, action, state_, reward, done):
+            self.memory.append((state, action, state_, reward, done))
     @tf.function
     def train_step(self,state, target):
         with tf.GradientTape() as tape:
@@ -68,19 +75,21 @@ class Agent():
         train_accuracy(target, predictions)
 
     def learn(self):
-        train_loss.reset_states()
-        train_accuracy.reset_states()
-        mini_batch=self.memory.generate_batch()
-        for state, action, state_, reward, done in mini_batch:
+        if self.epsilon > 0.01:
+            self.epsilon *= 0.995
+        batch_size = 100
+        if len(self.memory) < batch_size:
+            return
 
+        samples = random.sample(self.memory, batch_size)
+        #samples = self.memory
+        for state, action, state_, reward, done in samples:
+
+            target = self.HAL9000_target(state,training=False).numpy()
             if done:
-                target = reward
+                target[0][action] = reward
             else:
-                Qmax = tf.experimental.numpy.amax(self.HAL9000(state_))
-                target = reward + 0.95*Qmax
-            Q = self.HAL9000(state)
+                Q_future = max(self.HAL9000_target(state_,training=False).numpy()[0])
+                target[0][action] = reward + 0.95*Q_future
+            self.train_step(state, target)
 
-            target_f = tf.tensor_scatter_nd_update(Q,[[0, action]],[target])
-
-
-            self.train_step(state, target_f)
