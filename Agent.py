@@ -34,7 +34,7 @@ class DQN(Model):
 
 class Memory():
     def __init__(self):
-        self.replay_memory = deque(maxlen=15000)
+        self.replay_memory = deque(maxlen=2)
 
 
 
@@ -44,8 +44,8 @@ class Agent():
         self.HAL9000_target = DQN()
         #self.HAL9000_target.load_weights('wheights')
         #self.HAL9000.load_weights('wheights')
-        self.memory  =deque(maxlen=3000)
-        self.epsilon = 1
+        self.memory  =deque(maxlen=2000)
+        self.epsilon = 0.5
         self.th = 0
     def select_action(self,state):
 
@@ -77,7 +77,7 @@ class Agent():
     def learn(self):
         if self.epsilon > 0.01:
             self.epsilon *= 0.995
-        batch_size = 499
+        batch_size = 49
         if len(self.memory) < batch_size:
             return
 
@@ -90,6 +90,6 @@ class Agent():
                 target[0][action] = reward
             else:
                 Q_future = max(self.HAL9000_target(state_,training=False).numpy()[0])
-                target[0][action] = reward + Q_future
+                target[0][action] = reward + 0.99*Q_future
             self.train_step(state, target)
 

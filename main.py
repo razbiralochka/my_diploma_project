@@ -20,14 +20,16 @@ for episode in range(2000):
         agent.remember(state, action, state_, reward, done)
         state = state_
         Score += reward
-
+        agent.learn()
+        w = agent.HAL9000.get_weights()
+        agent.HAL9000_target.set_weights(w)
     if Score >= max_Score:
         max_Score = Score
         agent.HAL9000.save('HAL9000')
         agent.HAL9000.save_weights('wheights')
         print('saved')
         agent.HAL9000_target.load_weights('wheights')
-    agent.learn()
+    
 
 
 

@@ -54,15 +54,15 @@ class Enviroment():
 
         self.Time+=h
 
-        reward = 10*(err1-err2)
+        reward = 10*(err1-err2)/err2
 
         if self.state[1] > 46:
             done = True
-            reward = 5000/abs(self.state[2]-0.5)
+            reward += 5000/abs(self.state[2]-0.5)
 
         if abs(self.state[3]) > 1.2:
             done = True
-            reward = self.state[1]/err2
+            reward = -100
 
 
         return self.state, reward, done, self.Time
