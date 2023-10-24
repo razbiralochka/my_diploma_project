@@ -1,6 +1,6 @@
-from Enviroment import Enviroment
-from  Agent import Agent
 import numpy as np
+from Agent import Agent
+from Enviroment import Enviroment
 env = Enviroment()
 agent = Agent()
 
@@ -21,19 +21,10 @@ for episode in range(2000):
         state = state_
         Score += reward
         agent.learn()
-        w = agent.HAL9000.get_weights()
-        agent.HAL9000_target.set_weights(w)
+        agent.target_train()
+    score_list.append(Score)    
     if Score >= max_Score:
         max_Score = Score
-        agent.HAL9000.save('HAL9000')
-        agent.HAL9000.save_weights('wheights')
-        print('saved')
-        agent.HAL9000_target.load_weights('wheights')
-    
-
-
-
-
     print(state_)
     print("Score: ", Score)
     print("Time:", time)
